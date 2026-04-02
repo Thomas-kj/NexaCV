@@ -1,0 +1,53 @@
+name: Build and Deploy NexaCV
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "production" branch
+  push:
+    branches: [ "production" ]
+    
+permissions:          # This defines what the GitHub Actions workflow is allowed to access
+  id-token: write     # Allows GitHub to generate an OIDC token & this token is used to authenticate with Azure
+  contents: read      # This gives access to this repository code
+
+env:
+  ACR_NAME: 'nexacvregistry'                  # The name of the Registry
+  IMAGE_NAME: 'nexacv-app'                    # What we want to call the image
+  RESOURCE_GROUP: 'ResumeBuilderResource'     # The Resource Group name
+  APP_SERVICE_NAME: 'nexacv'                  # The Azure App Service (Web App) name
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4  # GitHub creates a fresh machine (runner) and Downloads the repository code into the runner. @v4 is the version of the action
+
+      # 1. Login to Azure using WIF (Workload Identity Federation) - (Secretless)
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # 2. Login to your Container Registry
+      - name: ACR Login
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      # 3. Build & Push Docker Image
+      - name: Build and Push
+        run: |
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          # Also tag as latest
+          docker tag ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+
+      # 4. Tell App Service to update to the new image
+      - name: Update App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.APP_SERVICE_NAME }}
+          images: '${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}'
+  

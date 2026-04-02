@@ -11,7 +11,7 @@ permissions:          # This defines what the GitHub Actions workflow is allowed
   contents: read      # This gives access to this repository code
 
 env:
-  ACR_NAME: 'nexacvregistry'                  # The name of the Registry
+  ACR_NAME: 'nexacvregistry-ancccgh0edgnh4f6'                  # The name of the Registry
   IMAGE_NAME: 'nexacv-app'                    # What we want to call the image
   RESOURCE_GROUP: 'ResumeBuilderResource'     # The Resource Group name
   APP_SERVICE_NAME: 'nexacv'                  # The Azure App Service (Web App) name
@@ -33,7 +33,7 @@ jobs:
 
       # 2. Login to your Container Registry
       - name: ACR Login
-        run: az acr login --name ${{ env.ACR_NAME }}
+        run: az acr login --name nexacvregistry
 
       # 3. Build & Push Docker Image
       - name: Build and Push

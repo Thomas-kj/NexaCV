@@ -1,2 +1,2 @@
 # NexaCV
-NexaCV is a modern resume builder that helps users create clean, professional, and ATS-friendly resumes quickly and effortlessly.
+NexaCV is a modern resume builder that helps users create clean, professional, and ATS friendly resumes quickly and effortlessly.
